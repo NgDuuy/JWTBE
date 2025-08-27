@@ -1,5 +1,6 @@
-import { where } from "sequelize";
 import db from "../models";
+import bcrypt from 'bcrypt';
+const saltRounds = 10;
 const getAllUser = async () => {
     let data = {
         EM: '',
@@ -39,7 +40,9 @@ const getUserWithPagination = async (page, limit) => {
         let offset = (page - 1) * (limit);
         let { count, rows } = await db.Users.findAndCountAll({
             offset: offset,
-            limit: limit
+            limit: limit,
+            attributes: ['id', 'username', 'email', 'phoneNumber', 'sex'],
+            include: { model: db.Group, attributes: ['name', "description"] }
         })
         let totalPages = Math.ceil(count / limit)
         let data = {
@@ -47,8 +50,6 @@ const getUserWithPagination = async (page, limit) => {
             totalPages: totalPages,
             users: rows
         }
-        console.log("Check input: ", offset, limit)
-        console.log("Check data: ", data)
         return {
             EM: 'Get user pagination success',
             EC: 0,
@@ -64,11 +65,69 @@ const getUserWithPagination = async (page, limit) => {
         }
     }
 }
+const hashPassword = (password) => {
+    let salt = bcrypt.genSaltSync(saltRounds);
+    let hashPass = bcrypt.hashSync(password, salt);
+    return hashPass
+}
+const checkEmailExist = async (email) => {
+    let checkEmail = await db.Users.findOne({
+        where: { email: email }
+    })
+
+    if (checkEmail) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
+const checkPhoneExist = async (phoneNumber) => {
+    let checkPhone = await db.Users.findOne({
+        where: { phoneNumber: phoneNumber }
+    })
+    if (checkPhone) {
+        return true;
+    }
+    else {
+        return false;
+    }
+}
 const createNewUser = async (data) => {
     try {
+        console.log("Check data: ", data)
+        let checkEmail = await checkEmailExist(data.email);
+        let checkPhone = await checkPhoneExist(data.phoneNumber);
+        if (checkEmail) {
+            return {
+                EM: 'The email was already exist',
+                EC: 1,
+                DT: ""
+            }
+        }
+        if (checkPhone) {
+            return {
+                EM: 'The phone number was already exist',
+                EC: 1,
+                DT: ""
+            }
+        }
+        let hashPass = hashPassword(data.password);
+        console.log("Check check in createNewUser1: ")
         await db.Users.create({
-
+            email: data.email,
+            password: hashPass,
+            username: data.userName,
+            phoneNumber: data.phoneNumber,
+            sex: data.gender,
+            groupId: data.groupId,
+            address: data.address
         })
+        return {
+            EM: 'Create new user success',
+            EC: 0,
+            DT: ''
+        }
     }
     catch (e) {
         console.log("Error in createNewUser: ", e)
@@ -100,9 +159,24 @@ const updateUser = async (data) => {
 }
 const deleteUser = async (id) => {
     try {
-        await db.Users.delete({
+        let user = await db.Users.findOne({
             where: { id: id }
         })
+        if (user) {
+            await user.destroy();
+            return {
+                EM: 'Delete user success',
+                EC: 0,
+                DT: ''
+            }
+        }
+        else {
+            return {
+                EM: 'User is not exist',
+                EC: 2,
+                DT: ''
+            }
+        }
     } catch (e) {
         console.log("Error in deleteUser: ", e)
         return {
