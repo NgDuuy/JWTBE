@@ -41,8 +41,9 @@ const getUserWithPagination = async (page, limit) => {
         let { count, rows } = await db.Users.findAndCountAll({
             offset: offset,
             limit: limit,
-            attributes: ['id', 'username', 'email', 'phoneNumber', 'sex'],
-            include: { model: db.Group, attributes: ['name', "description"] }
+            attributes: ['id', 'username', 'email', 'phoneNumber', 'sex', "address"],
+            include: { model: db.Group, attributes: ['name', "description", 'id'] },
+            order: [['id', 'DESC']],
         })
         let totalPages = Math.ceil(count / limit)
         let data = {
@@ -95,21 +96,21 @@ const checkPhoneExist = async (phoneNumber) => {
 }
 const createNewUser = async (data) => {
     try {
-        console.log("Check data: ", data)
+        console.log("Check data: ", data.username)
         let checkEmail = await checkEmailExist(data.email);
         let checkPhone = await checkPhoneExist(data.phoneNumber);
         if (checkEmail) {
             return {
                 EM: 'The email was already exist',
                 EC: 1,
-                DT: ""
+                DT: "email"
             }
         }
         if (checkPhone) {
             return {
                 EM: 'The phone number was already exist',
                 EC: 1,
-                DT: ""
+                DT: "phoneNumber"
             }
         }
         let hashPass = hashPassword(data.password);
@@ -117,7 +118,7 @@ const createNewUser = async (data) => {
         await db.Users.create({
             email: data.email,
             password: hashPass,
-            username: data.userName,
+            username: data.username,
             phoneNumber: data.phoneNumber,
             sex: data.gender,
             groupId: data.groupId,
@@ -140,13 +141,36 @@ const createNewUser = async (data) => {
 }
 const updateUser = async (data) => {
     try {
+        if (!data.groupId) {
+            return {
+                EM: 'Update error. Group id not found',
+                EC: 1,
+                DT: 'Group'
+            }
+        }
         let user = await db.Users.findOne({
-            where: { id: data.id }
+            where: { id: data.userData.id }
         })
         if (user) {
-
+            await user.update({
+                username: data.userData.username,
+                phoneNumber: data.userData.phoneNumber,
+                address: data.userData.address,
+                sex: data.userData.sex,
+                groupId: data.groupId
+            })
+            return {
+                EM: 'Update success',
+                EC: 0,
+                DT: ''
+            }
         } else {
             //Not found
+            return {
+                EM: 'Update error. Not found user',
+                EC: 2,
+                DT: ''
+            }
         }
     } catch (e) {
         console.log("Error in updateUser: ", e)

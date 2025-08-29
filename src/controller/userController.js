@@ -64,9 +64,14 @@ const create = async (req, res) => {
         })
     }
 }
-const update = (req, res) => {
+const update = async (req, res) => {
     try {
-
+        let data = await userApiService.updateUser(req.body)
+        return res.status(200).json({
+            EC: data.EC,
+            EM: data.EM,
+            DT: data.DT
+        })
     } catch (e) {
         console.log("Error in update userController: ", e)
         return res.status(500).json({

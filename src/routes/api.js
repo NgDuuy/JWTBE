@@ -15,5 +15,6 @@ export default function initApiRoute(app) {
     router.delete("/user/delete", userController.deleteUser);
 
     router.get("/group/read", groupController.read);
+
     return app.use('/api/v1/', router);
 }
