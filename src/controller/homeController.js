@@ -5,6 +5,8 @@ const handleHelloWork = (req, res) => {
     return res.render("home.ejs")
 }
 const handleUserPage = async (req, res) => {
+    res.cookie("test", "test cookies")
+    console.log('Cookies: ', req.cookies)
     let listUser = await userService.getListUserService()
     return res.render("user.ejs")
 }

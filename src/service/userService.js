@@ -2,6 +2,9 @@ import bcrypt from 'bcrypt';
 import mysql from 'mysql2';
 import db from '../models/index'
 import { Op } from 'sequelize';
+import { getGroupWithRole } from '../service/JWTService'
+import { createJWT } from '../middleware/JWTActions'
+require('dotenv').config()
 const saltRounds = 10;
 const connection = mysql.createConnection({
     host: 'localhost',
@@ -92,15 +95,14 @@ const handleRegisterService = async (inputData) => {
             DT: ""
         }
     }
-    console.log("Check check input data: ", inputData.password)
     let hashPass = hashPassword(inputData.password);
-    console.log("Check check input data: ")
     try {
         await db.Users.create({
             email: inputData.email,
             password: hashPass,
-            username: inputData.userName,
-            phoneNumber: inputData.phoneNumber
+            username: inputData.username,
+            phoneNumber: inputData.phoneNumber,
+            groupId: 6
         })
         return {
             EM: 'A new user has created successfuly',
@@ -133,10 +135,23 @@ const handleUserLoginService = async (userData) => {
         if (user) {
             let checkPasswordCorrect = await checkPassword(userData.password, user.password);
             if (checkPasswordCorrect === true) {
+                // let token=
+
+                //Test role
+                let groupWithRoles = await getGroupWithRole(user);
+                let payload = {
+                    email: user.email,
+                    groupWithRoles,
+                    expiresIn: process.env.JWT_EXPIRES_IN
+                }
+                let token = createJWT(payload);
                 return {
                     EM: 'Ok ',
                     EC: 0,
-                    DT: ''
+                    DT: {
+                        access_token: token,
+                        data: groupWithRoles
+                    }
                 }
             }
         }
