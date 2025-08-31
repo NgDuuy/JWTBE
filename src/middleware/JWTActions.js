@@ -1,5 +1,8 @@
 import jwt from 'jsonwebtoken';
 require('dotenv').config()
+
+const nonSercurePath = ['/', '/login', '/register'];
+
 const createJWT = (payload) => {
     let key = process.env.JWT_SECRET;
     let token = null;
@@ -23,6 +26,7 @@ const verifyToken = (token) => {
     return decoded;
 }
 const checkUserJWT = (req, res, next) => {
+    if (nonSercurePath.includes(req.path)) return next();
     let cookie = req.cookies;
     if (cookie && cookie.jwt) {
         let token = cookie.jwt;
@@ -48,6 +52,7 @@ const checkUserJWT = (req, res, next) => {
 
 }
 const checkPermission = (req, res, next) => {
+    if (nonSercurePath.includes(req.path)) return next();
     if (req.user) {
         let user = req.user.email;
         let roles = req.user.groupWithRoles.Roles;
