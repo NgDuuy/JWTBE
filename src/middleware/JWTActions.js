@@ -32,7 +32,8 @@ const checkUserJWT = (req, res, next) => {
         let token = cookie.jwt;
         let decoded = verifyToken(token);
         if (decoded) {
-            req.user = decoded
+            req.user = decoded;
+            req.token = token;
             next();
         }
         else {
@@ -52,7 +53,7 @@ const checkUserJWT = (req, res, next) => {
 
 }
 const checkPermission = (req, res, next) => {
-    if (nonSercurePath.includes(req.path)) return next();
+    if (nonSercurePath.includes(req.path) || req.path === '/account') return next();
     if (req.user) {
         let user = req.user.email;
         let roles = req.user.groupWithRoles.Roles;

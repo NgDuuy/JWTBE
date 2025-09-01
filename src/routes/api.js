@@ -21,6 +21,7 @@ export default function initApiRoute(app) {
 
     router.post('/register', apiController.handleRegister)
     router.post('/login', apiController.handleLogin)
+    router.get('/account', userController.getUserAccount)
 
     router.get("/user/read", userController.read);
     router.post("/user/create", userController.create);
